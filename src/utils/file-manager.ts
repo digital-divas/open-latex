@@ -20,6 +20,7 @@ export interface File extends CommonProps {
 export interface Directory extends CommonProps {
     files: File[];
     dirs: Directory[];
+    dirHandle?: FileSystemDirectoryHandle;
 }
 
 

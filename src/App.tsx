@@ -58,6 +58,7 @@ function App() {
       name: name,
       parentId,
       type: FileType.DIRECTORY,
+      dirHandle: dirHandle,
     };
 
     for await (const entry of dirHandle.values()) {
@@ -114,13 +115,72 @@ function App() {
   async function compileLatex() {
     try {
       setCompiling(true);
-      if (!selectedFile?.content) {
+
+      const file = rootDir.files.find(file => file.name === 'main.tex');
+
+      if (!file) {
         return;
       }
+
+      let content = file.content;
+
+      if (!content && file.fileHandle) {
+        const thisFile = await file.fileHandle.getFile();
+        content = await thisFile.text();
+      }
+
+      if (!content) {
+        return;
+      }
+
       var pdfTex = new PDFTeX();
       pdfTex.initializeFSMethods();
       await pdfTex.set_TOTAL_MEMORY(80 * 1024 * 1024);
-      const binary_pdf = await pdfTex.compileRaw(selectedFile.content);
+
+      pdfTex.on_stdout = (msg) => console.info(msg);
+      pdfTex.on_stderr = (msg) => console.error(msg);
+
+      const libs = rootDir.dirs.find(file => file.name === 'libs');
+
+      if (libs?.dirHandle) {
+        for await (const entry of libs.dirHandle.values()) {
+          const fileHandle = await libs.dirHandle.getFileHandle(entry.name);
+          const libFile = await fileHandle.getFile();
+          const libContent = await libFile.text();
+
+          console.log('creating lib file:', entry.name);
+          await pdfTex.FS_createDataFile('/', entry.name, libContent, true, true);
+        }
+      }
+
+      const latexFiles = [
+        'tex',
+        'aux',
+        'lof',
+        'toc',
+      ];
+
+      for (const item of rootDir.files) {
+
+        if (item.name === 'main.tex') {
+          continue;
+        }
+
+        const isLatexFile = latexFiles.some(latexFile => item.name.endsWith(`.${latexFile}`));
+
+        if (!isLatexFile || !item.fileHandle) {
+          continue;
+        }
+
+        const libFile = await item.fileHandle.getFile();
+        const libContent = await libFile.text();
+
+        await pdfTex.FS_createDataFile('/', item.name.startsWith('main.') ? item.name.replace('main.', 'input.') : item.name, libContent.normalize("NFD").replace(/[\u0300-\u036f]/g, ""), true, true);
+
+      }
+
+
+      const binary_pdf = await pdfTex.compileRaw(content);
 
       if (!binary_pdf) {
         return;
@@ -176,7 +236,7 @@ function App() {
       }, {
         label: 'Compile LaTeX',
         onClick: compileLatex,
-        disabled: !selectedFile || !selectedFile.name.endsWith('.tex'),
+        disabled: !rootDir.files.find(file => file.name === 'main.tex'),
         compileButton: true,
       }]}
       isCompiling={isCompiling}
@@ -188,7 +248,10 @@ function App() {
         <FileTree
           rootDir={rootDir}
           selectedFile={selectedFile}
-          onSelect={setSelectedFile}
+          onSelect={(file) => {
+            setSelectedFile(file);
+            setSelectedTab('code');
+          }}
         />
       </Sidebar>
       <div style={{

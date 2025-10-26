@@ -52,7 +52,7 @@ export default function Code({ selectedFile }: { selectedFile: File | undefined;
                 language = "javascript";
             } else if (language === "ts" || language === "tsx") {
                 language = "typescript";
-            } else if (language === "tex") {
+            } else if (language === "tex" || language === "aux" || language === "sty" || language === "lof" || language === "toc" || language === "def") {
                 language = "latex";
             }
 
@@ -69,9 +69,14 @@ export default function Code({ selectedFile }: { selectedFile: File | undefined;
         })();
     }, [selectedFile]);
 
-    function onChange(newValue?: string) {
+    async function onChange(newValue?: string) {
         if (newValue && selectedFile?.content) {
             selectedFile.content = newValue;
+        }
+        if (newValue && selectedFile?.fileHandle) {
+            const writable = await selectedFile.fileHandle.createWritable();
+            await writable.write(newValue);
+            await writable.close();
         }
     }
 

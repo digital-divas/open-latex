@@ -31,6 +31,7 @@ export class PDFTeX {
   public FS_createDataFile!: (...args: any[]) => Promise<any>;
   public FS_readFile!: (...args: any[]) => Promise<any>;
   public set_TOTAL_MEMORY!: (bytes: number) => Promise<any>;
+  public FS_createLazyFile!: (...args: any[]) => Promise<any>;
 
 
   public on_stdout: (msg: string) => void = console.log;
