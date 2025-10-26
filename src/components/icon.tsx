@@ -21,6 +21,11 @@ function getIconHelper() {
     cache.set("json", <SiJson color="#5656e6" />);
     cache.set("html", <SiHtml5 color="#e04e2c" />);
     cache.set("tex", <SiLatex color="#008080" />);
+    cache.set("aux", <SiLatex color="#008080" />);
+    cache.set("lof", <SiLatex color="#008080" />);
+    cache.set("toc", <SiLatex color="#008080" />);
+    cache.set("sty", <SiLatex color="#008080" />);
+    cache.set("def", <SiLatex color="#008080" />);
     cache.set("png", <FcPicture />);
     cache.set("jpg", <FcPicture />);
     cache.set("ico", <FcPicture />);
