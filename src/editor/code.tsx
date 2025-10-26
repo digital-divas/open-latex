@@ -77,8 +77,7 @@ export default function Code({ selectedFile }: { selectedFile: File | undefined;
 
     return (
         <div style={{
-            width: 'calc(100% - 250px)',
-            height: window.innerHeight - 25,
+            flex: 1,
             margin: 0,
             fontSize: 16,
         }}>

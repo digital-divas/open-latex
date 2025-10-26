@@ -6,6 +6,7 @@ import { FileTree } from './components/file-tree';
 import Sidebar from './components/sidebar';
 import HeaderBar from './components/header-bar';
 import { PDFTeX } from './pdftex/pdftex';
+import Tabs from './components/tabs';
 
 const dummyDir: Directory = {
   id: "1",
@@ -17,10 +18,29 @@ const dummyDir: Directory = {
   files: []
 };
 
+function PDFViewer({ dataUrl }: { dataUrl?: string; }) {
+  return (
+    <>
+      {dataUrl &&
+        <iframe
+          src={dataUrl}
+          style={{
+            width: "100%",
+            height: "100%",
+            border: "none",
+          }}
+          title="PDF preview"
+        />
+      }
+    </>
+  );
+}
+
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | undefined>(undefined);
   const [rootDir, setRootDir] = useState(dummyDir);
-
+  const [pdfDataUrl, setPdfDataUrl] = useState<string>();
+  const [selectedTab, setSelectedTab] = useState<string>();
 
   async function readDirectory({ dirHandle, depth = 0, initialPath = '/', name, parentId }: {
     dirHandle: FileSystemDirectoryHandle,
@@ -106,7 +126,9 @@ function App() {
     const uint8pdf = binaryStringToUint8Array(binary_pdf);
     const blob = new Blob([uint8pdf], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+
+    setPdfDataUrl(url);
+    setSelectedTab('pdf');
 
   }
 
@@ -157,9 +179,36 @@ function App() {
           onSelect={setSelectedFile}
         />
       </Sidebar>
-      <Code
-        selectedFile={selectedFile}
-      />
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        height: window.innerHeight - 25
+      }}>
+        <Tabs
+          tabs={[{
+            key: 'code',
+            label: selectedFile?.name || 'code',
+          }, {
+            key: 'pdf',
+            label: 'pdf'
+          }]}
+          selectedTab={selectedTab}
+          setSelectedTab={setSelectedTab}
+        >
+          {({ selectedTab }) => {
+            if (selectedTab === 'code') {
+              return <Code
+                selectedFile={selectedFile}
+              />;
+            }
+            if (selectedTab === 'pdf') {
+              return <PDFViewer
+                dataUrl={pdfDataUrl}
+              />;
+            }
+          }}
+        </Tabs>
+      </div>
     </div>
   </div>
   );
