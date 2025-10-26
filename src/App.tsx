@@ -41,6 +41,7 @@ function App() {
   const [rootDir, setRootDir] = useState(dummyDir);
   const [pdfDataUrl, setPdfDataUrl] = useState<string>();
   const [selectedTab, setSelectedTab] = useState<string>();
+  const [isCompiling, setCompiling] = useState(false);
 
   async function readDirectory({ dirHandle, depth = 0, initialPath = '/', name, parentId }: {
     dirHandle: FileSystemDirectoryHandle,
@@ -111,25 +112,32 @@ function App() {
   }
 
   async function compileLatex() {
-    if (!selectedFile?.content) {
-      return;
+    try {
+      setCompiling(true);
+      if (!selectedFile?.content) {
+        return;
+      }
+      var pdfTex = new PDFTeX();
+      pdfTex.initializeFSMethods();
+      await pdfTex.set_TOTAL_MEMORY(80 * 1024 * 1024);
+      const binary_pdf = await pdfTex.compileRaw(selectedFile.content);
+
+      if (!binary_pdf) {
+        return;
+      }
+
+      const uint8pdf = binaryStringToUint8Array(binary_pdf);
+      const blob = new Blob([uint8pdf], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+
+      setPdfDataUrl(url);
+      setSelectedTab('pdf');
+
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setCompiling(false);
     }
-    var pdfTex = new PDFTeX();
-    pdfTex.initializeFSMethods();
-    await pdfTex.set_TOTAL_MEMORY(80 * 1024 * 1024);
-    const binary_pdf = await pdfTex.compileRaw(selectedFile.content);
-
-    if (!binary_pdf) {
-      return;
-    }
-
-    const uint8pdf = binaryStringToUint8Array(binary_pdf);
-    const blob = new Blob([uint8pdf], { type: "application/pdf" });
-    const url = URL.createObjectURL(blob);
-
-    setPdfDataUrl(url);
-    setSelectedTab('pdf');
-
   }
 
   async function newTexFile() {
@@ -157,18 +165,22 @@ function App() {
 
 
   return (<div>
-    <HeaderBar items={[{
-      label: 'New TeX File',
-      onClick: newTexFile,
-    }, {
-      label: 'Open Folder...',
-      onClick: selectFolder,
-      disabled: !window.showDirectoryPicker,
-    }, {
-      label: 'Compile LaTeX',
-      onClick: compileLatex,
-      disabled: !selectedFile || !selectedFile.name.endsWith('.tex')
-    }]} />
+    <HeaderBar
+      items={[{
+        label: 'New TeX File',
+        onClick: newTexFile,
+      }, {
+        label: 'Open Folder...',
+        onClick: selectFolder,
+        disabled: !window.showDirectoryPicker,
+      }, {
+        label: 'Compile LaTeX',
+        onClick: compileLatex,
+        disabled: !selectedFile || !selectedFile.name.endsWith('.tex'),
+        compileButton: true,
+      }]}
+      isCompiling={isCompiling}
+    />
     <div style={{
       display: 'flex',
     }}>
