@@ -8,8 +8,6 @@ export const Sidebar = ({ children }: { children: ReactNode; }) => {
             borderRightStyle: 'solid',
             borderRightWidth: 2,
             borderColor: '#242424',
-            paddingTop: 3,
-
         }}>
             {children}
         </aside>
